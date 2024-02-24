@@ -27,6 +27,7 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import roc_curve,roc_auc_score, auc
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import f1_score
 from sklearn import tree
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
@@ -157,18 +158,13 @@ def get_features_wrapper(classifier, number_of_features):
   #print(sorted(selected_features))
   return selected_features
 
-# def show_results(classifierName):
-#   accuracy = accuracy_score(y_test, y_pred)
-#   print("Accuracy: %.2f%%" % (accuracy * 100.0))
-#   print(" ")
 
-#   cm = confusion_matrix(y_test, y_pred)
+def filter_selected_features(features):
+  X_train_selected = X_train[features]
+  X_test_selected = X_test[features]
+  return X_train_selected, X_test_selected
 
-#   disp = ConfusionMatrixDisplay(confusion_matrix=cm,
-#                                 display_labels=classifierName.classes_)
-#   disp.plot()
-
-#   plt.show()
+"""## Metrics"""
 
 def get_percision_recall_scores(y_test, y_pred, algorithm_name):
     rs=recall_score(y_test, y_pred)
@@ -202,7 +198,7 @@ def conf_mtrx(y_test, y_pred, model):
     plt.title("\nConfusion Matrix")
     plt.show()
 
-#Machine learning algorithms applying
+# Function for machine learning algorithms
 
 def ML_Algorithms(X_train, X_test, y_train, y_test, alg_name, model ,value):
 
@@ -221,6 +217,10 @@ def ML_Algorithms(X_train, X_test, y_train, y_test, alg_name, model ,value):
 
     accuracy = accuracy_score(y_test, y_pred)
     print("Accuracy: %.2f%%" % (accuracy * 100.0))
+    print(" ")
+
+    print(" ")
+    print("F1-score: ", f1_score(y_test, y_pred, average='weighted'))
     print(" ")
 
     if(value==1):
@@ -287,23 +287,23 @@ Trying different approaches:
 ## ReliefF
 """
 
-reliefF_features = get_features_reliefF(data, y, 10)
+reliefF_features = get_features_reliefF(data, y, 20)
 
 """## Chi-squared"""
 
-chi_feature = get_features_chi2(data, y, 10)
+chi_feature = get_features_chi2(data, y, 20)
 
 """## Recursive Feature Removal"""
 
-rfe_features = get_features_rfe(data, y, 10)
+rfe_features = get_features_rfe(data, y, 20)
 
 """## Information Gain"""
 
-infoGain_features = get_features_infoGain(data, y, 10)
+infoGain_features = get_features_infoGain(data, y, 20)
 
 """## Decision Tree"""
 
-dt_features = get_features_dt(data, y, 10)
+dt_features = get_features_dt(data, y, 20)
 
 """## Wrapper
 - Decision Tree
@@ -311,9 +311,9 @@ dt_features = get_features_dt(data, y, 10)
 - k-NN
 """
 
-wrapper_dt_features = get_features_wrapper(DecisionTreeClassifier(criterion='entropy'), 10)
-wrapper_NB_features = get_features_wrapper(GaussianNB(), 10)
-wrapper_knn_features = get_features_wrapper(KNeighborsClassifier(n_neighbors=5), 10)
+wrapper_dt_features = get_features_wrapper(DecisionTreeClassifier(criterion='entropy'), 20)
+wrapper_NB_features = get_features_wrapper(GaussianNB(), 20)
+wrapper_knn_features = get_features_wrapper(KNeighborsClassifier(n_neighbors=5), 20)
 
 print("Selected features from chi:         ", sorted(chi_feature))
 print("Selected features from rfe:         ", sorted(rfe_features))
@@ -324,16 +324,59 @@ print("Selected features from wrapper DT:  ", sorted(wrapper_dt_features))
 print("Selected features from wrapper NB:  ", sorted(wrapper_NB_features))
 print("Selected features from wrapper knn: ", sorted(wrapper_knn_features))
 
+"""## SELECT THE FEATURE SELECTION METHOD FOR THE MODELS
+
+"""
+
+# X_train_selected, X_test_selected = filter_selected_features(chi_feature)
+# X_train_selected, X_test_selected = filter_selected_features(rfe_features)
+# X_train_selected, X_test_selected = filter_selected_features(reliefF_features)
+# X_train_selected, X_test_selected = filter_selected_features(infoGain_features)
+# X_train_selected, X_test_selected = filter_selected_features(dt_features)
+# X_train_selected, X_test_selected = filter_selected_features(wrapper_dt_features)
+# X_train_selected, X_test_selected = filter_selected_features(wrapper_NB_features)
+# X_train_selected, X_test_selected = filter_selected_features(wrapper_knn_features)
+
+# common_features = [
+# 'DA 7',
+# 'DA 8',
+# 'DA 10',
+# 'DA 11',
+# 'M Y1',
+# 'M Y2',
+# 'M Y6',
+# 'M Y7',
+# 'M Y8',
+# 'M Y9',
+# 'M Y11',
+# 'M B6',
+# 'M B7',
+# 'X_Y5',
+# 'X_Y6',
+# 'N7']
+# X_train_selected, X_test_selected = filter_selected_features(common_features)
+
+scaler = StandardScaler().fit(X_train_selected)
+X_train_scaled = scaler.transform(X_train_selected)
+X_test_scaled = scaler.transform(X_test_selected)
+
 """# ML MODELS
 
 ## DECISION TREE
 """
 
 ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "DECISION TREE CLASSIFIER",
-              DecisionTreeClassifier(criterion='gini', max_depth=5, min_samples_split=10, min_samples_leaf=10, random_state=42), 1)
+              DecisionTreeClassifier(criterion='gini', max_depth=5, min_samples_split=7, min_samples_leaf=10, random_state=42), 1)
+
+"""## RANDOM FOREST"""
+
+ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "RANDOM FOREST CLASSIFIER",
+              RandomForestClassifier(criterion='entropy', max_depth=5, min_samples_split=10, min_samples_leaf=5, random_state=42),1)
+
+"""## LOGISTIC REGRESSION"""
 
 ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "LOGISTIC REGRESSION",
-              LogisticRegression(C=100.0, random_state=0, max_iter=20, solver='liblinear'),1)
+              LogisticRegression(C=100.0, penalty='l2', solver='liblinear'),1)
 
 """## NAIVE BAYES"""
 
@@ -362,25 +405,14 @@ plt.title('Accuracy Scores for Values of k of k-Nearest-Neighbors')
 plt.show()
 
 ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "K-NEIGHBORS CLASSIFIER",
-              KNeighborsClassifier(n_neighbors=8),1)
-
-"""## Random Forest"""
-
-ML_Algorithms(X_train, X_test, y_train, y_test, "RANDOM FOREST CLASSIFIER",
-              RandomForestClassifier(criterion='entropy', max_depth=15, min_samples_split=10, min_samples_leaf=10, random_state=42),1)
+              KNeighborsClassifier(n_neighbors=7),1)
 
 """## Gradient Boosting"""
 
-ML_Algorithms(X_train, X_test, y_train, y_test, "Gradient Boosting Classifier",
+ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "Gradient Boosting Classifier",
               GradientBoostingClassifier(n_estimators=15, learning_rate=0.4, max_features=20, max_depth=12, random_state=0),1)
 
 """## Neural Networks: MLP Classifier"""
 
-ML_Algorithms(X_train, X_test, y_train, y_test, "NN - MLPCLASSIFIER",
+ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "NN - MLPCLASSIFIER",
               MLPClassifier(hidden_layer_sizes=(1000, ),alpha=0.001,  learning_rate_init=0.001, power_t=0.9, max_iter=50),1)
-
-F1 score ekle
-sonuçlar excele
-XAI ile featurelar alınmalı
-önemli featurelar ile modeller eğitilip sonuçlar default hali ile kıyaslanmalı
-modellere hyperparameter tuning yapılmalı
