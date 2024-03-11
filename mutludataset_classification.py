@@ -9,13 +9,20 @@ Original file is located at
 
 pip install ReliefF
 
+pip install alibi
+
+pip install shap
+
 !mkdir -p drive
 !google-drive-ocamlfuse drive
 
 from google.colab import drive
 drive.mount('/content/drive')
 
+import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
+import matplotlib.gridspec as grid_spec
 import seaborn as sns
 import numpy as np
 import pandas as pd
@@ -45,6 +52,11 @@ from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.feature_selection import RFE
+
+# XAI
+import shap
+shap.initjs()
+from alibi.explainers import KernelShap
 
 np.random.seed(42)
 
@@ -164,6 +176,18 @@ def filter_selected_features(features):
   X_test_selected = X_test[features]
   return X_train_selected, X_test_selected
 
+"""# XAI Methods"""
+
+def get_features_shapTree(classifier):
+  explainer = shap.TreeExplainer(classifier)
+  shap_values = explainer.shap_values(X_test)
+  shap.summary_plot(shap_values, X_test)
+
+def get_features_shapKernelExplainer(classifier):
+  explainer = shap.KernelExplainer(classifier.predict_proba, X_train_scaled)
+  shap_values = explainer.shap_values(X_test_scaled)
+  shap.summary_plot(shap_values, X_test, plot_type="bar")
+
 """## Metrics"""
 
 def get_percision_recall_scores(y_test, y_pred, algorithm_name):
@@ -242,6 +266,8 @@ def ML_Algorithms(X_train, X_test, y_train, y_test, alg_name, model ,value):
         print('AUC: %.2f' % auc)
         plot_roc_curve(fpr, tpr)
 
+    return model
+
 """# DATASET"""
 
 data = pd.read_csv('drive/MyDrive/TEZ/autism-code/DuyguDurumları_veriseti/1_MutluDataSET.csv')
@@ -258,6 +284,9 @@ data['Class']= label_encoder.fit_transform(data['Class'])
 data['Class'].unique()
 
 y = data.pop('Class')
+
+features_list = list(data.columns)
+len(features_list)
 
 """# SPLIT DATA"""
 
@@ -356,34 +385,34 @@ print("Selected features from wrapper knn: ", sorted(wrapper_knn_features))
 # 'N7']
 # X_train_selected, X_test_selected = filter_selected_features(common_features)
 
-scaler = StandardScaler().fit(X_train_selected)
-X_train_scaled = scaler.transform(X_train_selected)
-X_test_scaled = scaler.transform(X_test_selected)
+# scaler = StandardScaler().fit(X_train_selected)
+# X_train_scaled = scaler.transform(X_train_selected)
+# X_test_scaled = scaler.transform(X_test_selected)
 
 """# ML MODELS
 
 ## DECISION TREE
 """
 
-ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "DECISION TREE CLASSIFIER",
+classifier_dt = ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "DECISION TREE CLASSIFIER",
               DecisionTreeClassifier(criterion='gini', max_depth=5, min_samples_split=7, min_samples_leaf=10, random_state=42), 1)
 
 """## RANDOM FOREST"""
 
-ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "RANDOM FOREST CLASSIFIER",
+classifier_rf = ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "RANDOM FOREST CLASSIFIER",
               RandomForestClassifier(criterion='entropy', max_depth=5, min_samples_split=10, min_samples_leaf=5, random_state=42),1)
 
 """## LOGISTIC REGRESSION"""
 
-ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "LOGISTIC REGRESSION",
+classifier_lr = ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "LOGISTIC REGRESSION",
               LogisticRegression(C=100.0, penalty='l2', solver='liblinear'),1)
 
 """## NAIVE BAYES"""
 
-ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "Bernoulli NB",
+classifier_bNB = ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "Bernoulli NB",
               BernoulliNB(alpha=0.0001, binarize=0.9),1)
 
-ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "GAUSSIAN NB",
+classifier_gNB = ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "GAUSSIAN NB",
               GaussianNB(),1)
 
 """## KNN"""
@@ -404,15 +433,34 @@ plt.ylabel('Accuracy Score')
 plt.title('Accuracy Scores for Values of k of k-Nearest-Neighbors')
 plt.show()
 
-ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "K-NEIGHBORS CLASSIFIER",
-              KNeighborsClassifier(n_neighbors=7),1)
+classifier_knn = ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "K-NEIGHBORS CLASSIFIER",
+              KNeighborsClassifier(n_neighbors=8),1)
 
 """## Gradient Boosting"""
 
-ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "Gradient Boosting Classifier",
+classifier_gb = ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "Gradient Boosting Classifier",
               GradientBoostingClassifier(n_estimators=15, learning_rate=0.4, max_features=20, max_depth=12, random_state=0),1)
 
 """## Neural Networks: MLP Classifier"""
 
-ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "NN - MLPCLASSIFIER",
+classifier_mlp = ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "NN - MLPCLASSIFIER",
               MLPClassifier(hidden_layer_sizes=(1000, ),alpha=0.001,  learning_rate_init=0.001, power_t=0.9, max_iter=50),1)
+
+"""# XAI METHODS"""
+
+get_features_shapTree(classifier_rf)
+
+get_features_shapTree(classifier_dt)
+
+get_features_shapTree(classifier_gb)
+
+get_features_shapKernelExplainer(classifier_knn)
+
+get_features_shapKernelExplainer(classifier_gNB)
+
+get_features_shapKernelExplainer(classifier_bNB)
+
+get_features_shapKernelExplainer(classifier_lr)
+
+get_features_shapKernelExplainer(classifier_mlp)
+
