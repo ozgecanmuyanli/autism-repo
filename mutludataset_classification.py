@@ -178,15 +178,22 @@ def filter_selected_features(features):
 
 """# XAI Methods"""
 
-def get_features_shapTree(classifier):
-  explainer = shap.TreeExplainer(classifier)
-  shap_values = explainer.shap_values(X_test)
+def get_features_shap(classifier):
+  explainer = shap.Explainer(classifier.predict, X_train_scaled)
+  # Calculate SHAP values
+  shap_values = explainer.shap_values(X_test_scaled)
+  # Summary plot
   shap.summary_plot(shap_values, X_test)
 
-def get_features_shapKernelExplainer(classifier):
-  explainer = shap.KernelExplainer(classifier.predict_proba, X_train_scaled)
+def get_feature_importance_values(classifier)
+  explainer = shap.Explainer(classifier.predict, X_train_scaled)
   shap_values = explainer.shap_values(X_test_scaled)
-  shap.summary_plot(shap_values, X_test, plot_type="bar")
+
+  vals= np.abs(shap_values).mean(0)
+
+  feature_importance = pd.DataFrame(list(zip(data.columns, sum(vals))), columns=['col_name','feature_importance_vals'])
+  feature_importance.sort_values(by=['feature_importance_vals'], ascending=False,inplace=True)
+  feature_importance.head(5)
 
 """## Metrics"""
 
@@ -448,19 +455,19 @@ classifier_mlp = ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "
 
 """# XAI METHODS"""
 
-get_features_shapTree(classifier_rf)
+get_features_shap(classifier_rf)
 
-get_features_shapTree(classifier_dt)
+get_features_shap(classifier_dt)
 
-get_features_shapTree(classifier_gb)
+get_features_shap(classifier_gb)
 
-get_features_shapKernelExplainer(classifier_knn)
+get_features_shap(classifier_knn)
 
-get_features_shapKernelExplainer(classifier_gNB)
+get_features_shap(classifier_gNB)
 
-get_features_shapKernelExplainer(classifier_bNB)
+get_features_shap(classifier_bNB)
 
-get_features_shapKernelExplainer(classifier_lr)
+get_features_shap(classifier_lr)
 
-get_features_shapKernelExplainer(classifier_mlp)
+get_features_shap(classifier_mlp)
 
