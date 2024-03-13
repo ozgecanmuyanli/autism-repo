@@ -184,16 +184,23 @@ def get_features_shap(classifier):
   shap_values = explainer.shap_values(X_test_scaled)
   # Summary plot
   shap.summary_plot(shap_values, X_test)
+  return shap_values
 
-def get_feature_importance_values(classifier)
-  explainer = shap.Explainer(classifier.predict, X_train_scaled)
-  shap_values = explainer.shap_values(X_test_scaled)
+def get_feature_importance_values(shap_values):
+  mean_shap_values = np.abs(shap_values).mean(axis=0)
 
-  vals= np.abs(shap_values).mean(0)
+  # Create a DataFrame to store feature importances
+  feature_importance = pd.DataFrame({'col_name': data.columns, 'feature_importance_vals': mean_shap_values})
 
-  feature_importance = pd.DataFrame(list(zip(data.columns, sum(vals))), columns=['col_name','feature_importance_vals'])
-  feature_importance.sort_values(by=['feature_importance_vals'], ascending=False,inplace=True)
-  feature_importance.head(5)
+  # Sort the DataFrame by feature importance values
+  feature_importance = feature_importance.sort_values(by='feature_importance_vals', ascending=False)
+
+  # Display the top 5 features
+  top_features = feature_importance.head(20)
+  print(top_features)
+  # Get the column names into a list
+  column_names = feature_importance['col_name'].head(20).tolist()
+  return column_names
 
 """## Metrics"""
 
@@ -441,7 +448,7 @@ plt.title('Accuracy Scores for Values of k of k-Nearest-Neighbors')
 plt.show()
 
 classifier_knn = ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "K-NEIGHBORS CLASSIFIER",
-              KNeighborsClassifier(n_neighbors=8),1)
+              KNeighborsClassifier(n_neighbors=7),1)
 
 """## Gradient Boosting"""
 
@@ -455,19 +462,74 @@ classifier_mlp = ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "
 
 """# XAI METHODS"""
 
-get_features_shap(classifier_rf)
+shapValues = get_features_shap(classifier_rf)
+rf_features = get_feature_importance_values(shapValues)
 
-get_features_shap(classifier_dt)
+shapValues = get_features_shap(classifier_dt)
+dt_features = get_feature_importance_values(shapValues)
 
-get_features_shap(classifier_gb)
+shapValues = get_features_shap(classifier_gb)
+gb_features = get_feature_importance_values(shapValues)
 
-get_features_shap(classifier_knn)
+shapValues = get_features_shap(classifier_knn)
+knn_features = get_feature_importance_values(shapValues)
 
-get_features_shap(classifier_gNB)
+shapValues = get_features_shap(classifier_gNB)
+gNB_features = get_feature_importance_values(shapValues)
 
-get_features_shap(classifier_bNB)
+shapValues = get_features_shap(classifier_bNB)
+bNB_features = get_feature_importance_values(shapValues)
 
-get_features_shap(classifier_lr)
+shapValues = get_features_shap(classifier_lr)
+lr_features = get_feature_importance_values(shapValues)
 
-get_features_shap(classifier_mlp)
+shapValues = get_features_shap(classifier_mlp)
+mlp_features = get_feature_importance_values(shapValues)
+
+"""## Train models with the selected features by SHAP"""
+
+# activate one of the following lines, go back to ML Models section and train the related model again.
+
+# X_train_selected, X_test_selected = filter_selected_features(rf_features)
+# X_train_selected, X_test_selected = filter_selected_features(dt_features)
+# X_train_selected, X_test_selected = filter_selected_features(gb_features)
+# X_train_selected, X_test_selected = filter_selected_features(knn_features)
+# X_train_selected, X_test_selected = filter_selected_features(bNB_features)
+# X_train_selected, X_test_selected = filter_selected_features(gNB_features)
+# X_train_selected, X_test_selected = filter_selected_features(lr_features)
+# X_train_selected, X_test_selected = filter_selected_features(mlp_features)
+
+common_shap_features = [
+'DA 1',
+'DA 10',
+'DA 11',
+'M Y2',
+'M Y3',
+'M Y4',
+'M Y5',
+'M Y9',
+'M Y10',
+'M Y11',
+'M Y12',
+'M B5',
+'M B9',
+'X_Y6',
+'N3',
+'N4',
+'N5',
+'X_B11']
+X_train_selected, X_test_selected = filter_selected_features(common_shap_features)
+
+common_shap_featSel_features = [
+'DA 10',
+'DA 11',
+'M Y2',
+'M Y9',
+'M Y11',
+'X_Y6']
+X_train_selected, X_test_selected = filter_selected_features(common_shap_featSel_features)
+
+scaler = StandardScaler().fit(X_train_selected)
+X_train_scaled = scaler.transform(X_train_selected)
+X_test_scaled = scaler.transform(X_test_selected)
 
