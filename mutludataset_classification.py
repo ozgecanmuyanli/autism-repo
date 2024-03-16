@@ -297,6 +297,15 @@ data['Class']= label_encoder.fit_transform(data['Class'])
 
 data['Class'].unique()
 
+counts = data['Class'].value_counts()
+
+# If your target feature has values labeled as 1 and 0
+num_ones = counts.get(1, 0)
+num_zeros = counts.get(0, 0)
+
+print("Number of ones:", num_ones)
+print("Number of zeros:", num_zeros)
+
 y = data.pop('Class')
 
 features_list = list(data.columns)
@@ -308,6 +317,12 @@ X_train, X_test, y_train, y_test = train_test_split(data, y, test_size=0.2, rand
 
 print("Training records: {}".format(X_train.shape[0]))
 print("Testing records: {}".format(X_test.shape[0]))
+
+num_ones = np.count_nonzero(y_test == 1)
+num_zeros = np.count_nonzero(y_test == 0)
+
+print("Number of ones in X_test:", num_ones)
+print("Number of zeros in X_test:", num_zeros)
 
 scaler = StandardScaler().fit(X_train)
 X_train_scaled = scaler.transform(X_train)
