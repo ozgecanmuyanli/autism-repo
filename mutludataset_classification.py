@@ -13,6 +13,10 @@ pip install alibi
 
 pip install shap
 
+pip install eli5
+
+pip install lime
+
 !mkdir -p drive
 !google-drive-ocamlfuse drive
 
@@ -57,6 +61,7 @@ from sklearn.feature_selection import RFE
 import shap
 shap.initjs()
 from alibi.explainers import KernelShap
+import eli5
 
 np.random.seed(42)
 
@@ -463,7 +468,7 @@ plt.title('Accuracy Scores for Values of k of k-Nearest-Neighbors')
 plt.show()
 
 classifier_knn = ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "K-NEIGHBORS CLASSIFIER",
-              KNeighborsClassifier(n_neighbors=7),1)
+              KNeighborsClassifier(n_neighbors=3),1)
 
 """## Gradient Boosting"""
 
@@ -475,7 +480,10 @@ classifier_gb = ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "G
 classifier_mlp = ML_Algorithms(X_train_scaled, X_test_scaled, y_train, y_test, "NN - MLPCLASSIFIER",
               MLPClassifier(hidden_layer_sizes=(1000, ),alpha=0.001,  learning_rate_init=0.001, power_t=0.9, max_iter=50),1)
 
-"""# XAI METHODS"""
+"""# XAI METHODS
+
+## SHAP
+"""
 
 shapValues = get_features_shap(classifier_rf)
 rf_features = get_feature_importance_values(shapValues)
@@ -501,7 +509,7 @@ lr_features = get_feature_importance_values(shapValues)
 shapValues = get_features_shap(classifier_mlp)
 mlp_features = get_feature_importance_values(shapValues)
 
-"""## Train models with the selected features by SHAP"""
+"""### Train models with the selected features by SHAP"""
 
 # activate one of the following lines, go back to ML Models section and train the related model again.
 
@@ -543,6 +551,55 @@ common_shap_featSel_features = [
 'M Y11',
 'X_Y6']
 X_train_selected, X_test_selected = filter_selected_features(common_shap_featSel_features)
+
+scaler = StandardScaler().fit(X_train_selected)
+X_train_scaled = scaler.transform(X_train_selected)
+X_test_scaled = scaler.transform(X_test_selected)
+
+"""## LIME"""
+
+# Get feature names
+feature_names = data.columns.tolist()
+
+# Get target names
+target_names = data.index.tolist()
+
+pip install lime
+
+# LIME has one explainer for all the models
+explainer = lime.lime_tabular.LimeTabularExplainer(X_train_scaled, feature_names=X_train.columns.values.tolist(),
+                                                  class_names=['Class'], verbose=True, mode='classification')
+
+for j in range(0, 3):
+  exp = explainer.explain_instance(X_test_scaled[j], classifier_lr.predict_proba, num_features=20)
+  exp.show_in_notebook(show_table=True)
+
+# Show the predictions
+exp.show_in_notebook(show_table=True)
+
+"""## ELI5"""
+
+eli5.show_weights(classifier_dt, feature_names=feature_names, top=None)
+
+eli5.show_weights(classifier_rf, feature_names=feature_names, top=None)
+
+eli5.show_weights(classifier_gb, feature_names=feature_names, top=None)
+
+eli5.show_weights(classifier_lr, feature_names=feature_names, top=None)
+
+shap_eli5_common_features = [
+'DA 10',
+'DA 11',
+'M Y2',
+'M Y3',
+'M Y5',
+'M Y9',
+'M Y10',
+'M Y11',
+'M Y12',
+'M B9',
+'X_Y6']
+X_train_selected, X_test_selected = filter_selected_features(shap_eli5_common_features)
 
 scaler = StandardScaler().fit(X_train_selected)
 X_train_scaled = scaler.transform(X_train_selected)
